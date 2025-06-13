@@ -13,10 +13,7 @@ const API = {
 // Common headers for all requests
 const headers = {
     'Content-Type': 'application/json',
-    'ngrok-skip-browser-warning': 'true',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+    'ngrok-skip-browser-warning': 'true'
 };
 
 // Vocabulary state
