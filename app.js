@@ -113,47 +113,30 @@ async function addWord(word, translation) {
             throw new Error('User ID is required');
         }
 
-        alert('Отправляем данные на сервер: ' + JSON.stringify({
-            user_id,
-            word,
-            translation
-        }, null, 2));
+        const response = await fetch(API.addWord, {
+            method: 'POST',
+            mode: 'cors',
+            credentials: 'omit',
+            headers,
+            body: JSON.stringify({
+                user_id,
+                word,
+                translation
+            })
+        });
 
-        try {
-            const response = await fetch(API.addWord, {
-                method: 'POST',
-                mode: 'cors',
-                credentials: 'omit',
-                headers,
-                body: JSON.stringify({
-                    user_id,
-                    word,
-                    translation
-                })
-            });
-
-            alert('Статус ответа: ' + response.status);
-            
-            if (response.status === 0) {
-                throw new Error('Сервер недоступен. Проверьте URL и доступность сервера.');
-            }
-
-            const responseData = await response.json();
-            alert('Данные ответа: ' + JSON.stringify(responseData, null, 2));
-
-            if (!response.ok) {
-                throw new Error(responseData.error || 'Ошибка сервера: ' + response.status);
-            }
-
-            return responseData;
-        } catch (fetchError) {
-            if (fetchError.name === 'TypeError' && fetchError.message.includes('Failed to fetch')) {
-                throw new Error('Ошибка сети. Проверьте подключение и доступность сервера.');
-            }
-            throw fetchError;
+        if (response.status === 0) {
+            throw new Error('Сервер недоступен. Проверьте URL и доступность сервера.');
         }
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+            throw new Error(responseData.error || 'Ошибка сервера: ' + response.status);
+        }
+
+        return responseData;
     } catch (error) {
-        alert('Ошибка при добавлении слова: ' + error.message);
         throw error;
     }
 }
@@ -205,18 +188,13 @@ async function updateWordStatus(wordId, status) {
             status
         };
 
-        alert('Отправляем данные на сервер:\n' + JSON.stringify(requestData, null, 2));
-
         const response = await fetch(`${API.updateWordStatus}/${wordId}/status`, {
             method: 'PUT',
             headers,
             body: JSON.stringify(requestData)
         });
 
-        alert('Статус ответа: ' + response.status);
-
         const responseData = await response.json();
-        alert('Ответ от сервера:\n' + JSON.stringify(responseData, null, 2));
 
         if (!response.ok) {
             throw new Error(responseData.error || 'Failed to update word status');
@@ -243,7 +221,6 @@ async function updateWordStatus(wordId, status) {
         return responseData;
     } catch (error) {
         console.error('Error updating word status:', error);
-        alert('Полная ошибка:\n' + error.message + '\n\nStack trace:\n' + error.stack);
         throw error;
     }
 }
@@ -428,18 +405,9 @@ async function handleAddWord() {
 
 // Event listeners
 showTranslationButton.addEventListener('click', showTranslation);
-rememberButton.addEventListener('click', () => {
-    alert('Нажата кнопка Remember');
-    handleMemoryAssessment('remember');
-});
-forgetButton.addEventListener('click', () => {
-    alert('Нажата кнопка Forget');
-    handleMemoryAssessment('forget');
-});
-repeatTomorrowButton.addEventListener('click', () => {
-    alert('Нажата кнопка Repeat Tomorrow');
-    handleMemoryAssessment('repeat_tomorrow');
-});
+rememberButton.addEventListener('click', () => handleMemoryAssessment('remember'));
+forgetButton.addEventListener('click', () => handleMemoryAssessment('forget'));
+repeatTomorrowButton.addEventListener('click', () => handleMemoryAssessment('repeat_tomorrow'));
 saveWordButton.addEventListener('click', handleAddWord);
 cancelAddWordButton.addEventListener('click', () => {
     addWordForm.classList.add('hidden');
