@@ -7,7 +7,8 @@ const API = {
     getWords: 'https://545a-88-210-3-111.ngrok-free.app/api/words',
     addWord: 'https://545a-88-210-3-111.ngrok-free.app/api/words',
     deleteWord: 'https://545a-88-210-3-111.ngrok-free.app/api/words',
-    updateWord: 'https://545a-88-210-3-111.ngrok-free.app/api/words'
+    updateWord: 'https://545a-88-210-3-111.ngrok-free.app/api/words',
+    updateTranslation: 'https://545a-88-210-3-111.ngrok-free.app/api/words'
 };
 
 // Common headers for all requests
@@ -325,19 +326,19 @@ async function handleUpdateWord() {
             throw new Error('User ID is required');
         }
 
-        const response = await fetch(`${API.updateWord}/${wordId}`, {
-            method: 'PUT',
+        // Update translation using PATCH request
+        const response = await fetch(`${API.updateTranslation}/${wordId}/translation`, {
+            method: 'PATCH',
             headers,
             body: JSON.stringify({
                 user_id,
-                word,
                 translation
             })
         });
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error || 'Failed to update word');
+            throw new Error(error.error || 'Failed to update translation');
         }
 
         const updatedWord = await response.json();
@@ -355,7 +356,7 @@ async function handleUpdateWord() {
         triggerHapticFeedback('success');
     } catch (error) {
         triggerHapticFeedback('error');
-        alert('Error updating word: ' + error.message);
+        alert('Error updating translation: ' + error.message);
     }
 }
 
