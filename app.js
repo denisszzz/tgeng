@@ -100,25 +100,41 @@ async function addWord(word, translation) {
             translation
         }, null, 2));
 
-        const response = await fetch(API.addWord, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-                user_id,
-                word,
-                translation
-            })
-        });
+        try {
+            const response = await fetch(API.addWord, {
+                method: 'POST',
+                headers: {
+                    ...headers,
+                    'Accept': 'application/json',
+                    'Origin': window.location.origin
+                },
+                body: JSON.stringify({
+                    user_id,
+                    word,
+                    translation
+                })
+            });
 
-        alert('Статус ответа: ' + response.status);
-        const responseData = await response.json();
-        alert('Данные ответа: ' + JSON.stringify(responseData, null, 2));
+            alert('Статус ответа: ' + response.status);
+            
+            if (response.status === 0) {
+                throw new Error('Сервер недоступен. Проверьте URL и доступность сервера.');
+            }
 
-        if (!response.ok) {
-            throw new Error(responseData.error || 'Failed to add word');
+            const responseData = await response.json();
+            alert('Данные ответа: ' + JSON.stringify(responseData, null, 2));
+
+            if (!response.ok) {
+                throw new Error(responseData.error || 'Ошибка сервера: ' + response.status);
+            }
+
+            return responseData;
+        } catch (fetchError) {
+            if (fetchError.name === 'TypeError' && fetchError.message.includes('Failed to fetch')) {
+                throw new Error('Ошибка сети. Проверьте подключение и доступность сервера.');
+            }
+            throw fetchError;
         }
-
-        return responseData;
     } catch (error) {
         alert('Ошибка при добавлении слова: ' + error.message);
         throw error;
