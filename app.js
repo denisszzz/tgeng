@@ -382,28 +382,38 @@ async function updateStatistics(status) {
             throw new Error('User ID is required');
         }
 
+        alert('Начало updateStatistics. Статус: ' + status);
+
         // Create date in RFC3339 format
         const now = new Date();
-        const date = now.toISOString(); // This will give format like "2024-03-14T12:00:00.000Z"
+        const date = now.toISOString();
+
+        const requestData = {
+            user_id,
+            status,
+            date
+        };
+
+        alert('Отправляем данные статистики:\n' + JSON.stringify(requestData, null, 2));
 
         const response = await fetch(API.updateStatistics, {
             method: 'POST',
             headers,
-            body: JSON.stringify({
-                user_id,
-                status,
-                date
-            })
+            body: JSON.stringify(requestData)
         });
 
+        alert('Статус ответа статистики: ' + response.status);
+
+        const responseData = await response.json();
+        alert('Ответ статистики:\n' + JSON.stringify(responseData, null, 2));
+
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to update statistics');
+            throw new Error(responseData.error || 'Failed to update statistics');
         }
 
-        return await response.json();
+        return responseData;
     } catch (error) {
-        console.error('Error updating statistics:', error);
+        alert('Ошибка в updateStatistics: ' + error.message);
         throw error;
     }
 }
@@ -418,6 +428,8 @@ function loadStatistics() {
 
 // Update word progress tracking
 function updateWordProgress(wordId, status) {
+    alert('Начало updateWordProgress. Статус: ' + status);
+    
     if (!statistics.wordProgress[wordId]) {
         statistics.wordProgress[wordId] = {
             attempts: 0,
@@ -451,22 +463,29 @@ async function handleMemoryAssessment(status) {
     if (!currentWord) return;
 
     try {
+        alert('Начало handleMemoryAssessment. Статус: ' + status);
+        
         // Keep status in lowercase with underscores
         const formattedStatus = status.toLowerCase();
+        alert('Отформатированный статус: ' + formattedStatus);
+        
         await updateWordStatus(currentWord.id, formattedStatus);
         
         // Update statistics
-        updateStatistics(formattedStatus);
+        alert('Обновляем статистику со статусом: ' + formattedStatus);
+        await updateStatistics(formattedStatus);
         updateWordProgress(currentWord.id, formattedStatus);
         
         // Refresh vocabulary from server
+        alert('Обновляем список слов с сервера');
         vocabulary = await fetchWords();
         
         // Show next word
         updateWord();
         updateProgress();
     } catch (error) {
-        alert('Error updating word status: ' + error.message);
+        alert('Ошибка в handleMemoryAssessment: ' + error.message);
+        throw error;
     }
 }
 
@@ -503,9 +522,18 @@ async function handleAddWord() {
 
 // Event listeners
 showTranslationButton.addEventListener('click', showTranslation);
-rememberButton.addEventListener('click', () => handleMemoryAssessment('remember'));
-forgetButton.addEventListener('click', () => handleMemoryAssessment('forget'));
-repeatTomorrowButton.addEventListener('click', () => handleMemoryAssessment('repeat_tomorrow'));
+rememberButton.addEventListener('click', () => {
+    alert('Нажата кнопка Remember');
+    handleMemoryAssessment('remember');
+});
+forgetButton.addEventListener('click', () => {
+    alert('Нажата кнопка Forget');
+    handleMemoryAssessment('forget');
+});
+repeatTomorrowButton.addEventListener('click', () => {
+    alert('Нажата кнопка Repeat Tomorrow');
+    handleMemoryAssessment('repeat_tomorrow');
+});
 saveWordButton.addEventListener('click', handleAddWord);
 cancelAddWordButton.addEventListener('click', () => {
     addWordForm.classList.add('hidden');
