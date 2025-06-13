@@ -13,21 +13,68 @@
             <h1>English Vocabulary Practice</h1>
         </div>
 
-        <div class="word-card">
-            <div class="word">Loading...</div>
-            <div class="translation hidden">Translation will appear here</div>
+        <div class="tabs">
+            <button class="tab-button active" data-tab="learn">Learn</button>
+            <button class="tab-button" data-tab="manage">Manage Words</button>
         </div>
 
-        <div class="controls">
-            <button class="tg-button" id="showTranslation">Show Translation</button>
-            <button class="tg-button" id="nextWord">Next Word</button>
-        </div>
-
-        <div class="progress">
-            <div class="progress-bar">
-                <div class="progress-fill"></div>
+        <div class="tab-content active" id="learn-tab">
+            <div class="word-card">
+                <div class="word">Loading...</div>
+                <div class="translation hidden">Translation will appear here</div>
             </div>
-            <div class="progress-text">0/0 words</div>
+
+            <div class="controls">
+                <button class="tg-button" id="showTranslation">Show Translation</button>
+            </div>
+
+            <div class="memory-controls hidden">
+                <button class="tg-button memory-button remember" id="rememberBtn">
+                    <span class="button-icon">✅</span>
+                    Remember
+                </button>
+                <button class="tg-button memory-button forget" id="forgetBtn">
+                    <span class="button-icon">❌</span>
+                    Forget
+                </button>
+                <button class="tg-button memory-button remind" id="remindBtn">
+                    <span class="button-icon">⏰</span>
+                    Remind Later
+                </button>
+            </div>
+
+            <div class="progress">
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <div class="progress-text">0/0 words</div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="manage-tab">
+            <div class="word-list">
+                <div class="word-list-header">
+                    <h2>Your Words</h2>
+                    <button class="tg-button" id="addNewWordBtn">Add New Word</button>
+                </div>
+                <div class="words-container" id="wordsList">
+                    <!-- Words will be added here dynamically -->
+                </div>
+            </div>
+
+            <div class="add-word-form hidden" id="addWordForm">
+                <h2>Add New Word</h2>
+                <div class="form-group">
+                    <input type="text" id="newWord" placeholder="Enter English word" class="tg-input">
+                </div>
+                <div class="form-group">
+                    <input type="text" id="newTranslation" placeholder="Enter translation" class="tg-input">
+                </div>
+                <div class="form-buttons">
+                    <button class="tg-button" id="saveWord">Save</button>
+                    <button class="tg-button cancel-button" id="cancelAddWord">Cancel</button>
+                </div>
+            </div>
         </div>
     </div>
     <script src="app.js"></script>

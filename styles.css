@@ -5,6 +5,9 @@
     --tg-theme-link-color: #2481cc;
     --tg-theme-button-color: #2481cc;
     --tg-theme-button-text-color: #ffffff;
+    --remember-color: #34c759;
+    --forget-color: #ff3b30;
+    --remind-color: #ff9500;
 }
 
 body {
@@ -32,6 +35,40 @@ body {
     color: var(--tg-theme-text-color);
 }
 
+/* Tabs */
+.tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    padding-bottom: 8px;
+}
+
+.tab-button {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 12px;
+    font-size: 16px;
+    color: var(--tg-theme-hint-color);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab-button.active {
+    color: var(--tg-theme-button-color);
+    border-bottom: 2px solid var(--tg-theme-button-color);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Word Card */
 .word-card {
     background-color: var(--tg-theme-bg-color);
     border-radius: 12px;
@@ -50,12 +87,14 @@ body {
 .translation {
     font-size: 18px;
     color: var(--tg-theme-hint-color);
+    margin-bottom: 16px;
 }
 
 .translation.hidden {
     display: none;
 }
 
+/* Controls */
 .controls {
     display: flex;
     gap: 12px;
@@ -71,13 +110,55 @@ body {
     padding: 12px;
     font-size: 16px;
     cursor: pointer;
-    transition: opacity 0.2s;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 .tg-button:active {
-    opacity: 0.8;
+    transform: scale(0.98);
+    opacity: 0.9;
 }
 
+.button-icon {
+    font-size: 18px;
+}
+
+/* Memory Controls */
+.memory-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.memory-controls.hidden {
+    display: none;
+}
+
+.memory-button {
+    width: 100%;
+}
+
+.memory-button.remember {
+    background-color: var(--remember-color);
+}
+
+.memory-button.forget {
+    background-color: var(--forget-color);
+}
+
+.memory-button.remind {
+    background-color: var(--remind-color);
+}
+
+.cancel-button {
+    background-color: var(--tg-theme-hint-color);
+}
+
+/* Progress */
 .progress {
     margin-top: 24px;
 }
@@ -101,4 +182,112 @@ body {
     text-align: center;
     font-size: 14px;
     color: var(--tg-theme-hint-color);
-} 
+}
+
+/* Word List */
+.word-list {
+    background-color: var(--tg-theme-bg-color);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.word-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.word-list-header h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.words-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.word-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+}
+
+.word-item-content {
+    flex: 1;
+}
+
+.word-item-word {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.word-item-translation {
+    color: var(--tg-theme-hint-color);
+    font-size: 14px;
+}
+
+.word-item-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.word-item-actions button {
+    padding: 8px;
+    font-size: 14px;
+}
+
+/* Add Word Form */
+.add-word-form {
+    margin-top: 24px;
+    padding: 20px;
+    background-color: var(--tg-theme-bg-color);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.add-word-form.hidden {
+    display: none;
+}
+
+.add-word-form h2 {
+    font-size: 18px;
+    margin: 0 0 16px 0;
+    text-align: center;
+}
+
+.form-group {
+    margin-bottom: 12px;
+}
+
+.tg-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--tg-theme-hint-color);
+    border-radius: 8px;
+    font-size: 16px;
+    box-sizing: border-box;
+    background-color: var(--tg-theme-bg-color);
+    color: var(--tg-theme-text-color);
+}
+
+.tg-input::placeholder {
+    color: var(--tg-theme-hint-color);
+}
+
+.tg-input:focus {
+    outline: none;
+    border-color: var(--tg-theme-button-color);
+}
+
+.form-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+}

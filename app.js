@@ -2,15 +2,16 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// Sample vocabulary data (in a real app, this would come from a backend)
-const vocabulary = [
-    { word: 'Serendipity', translation: 'Счастливая случайность' },
-    { word: 'Ephemeral', translation: 'Кратковременный' },
-    { word: 'Ubiquitous', translation: 'Вездесущий' },
-    { word: 'Eloquent', translation: 'Красноречивый' },
-    { word: 'Mellifluous', translation: 'Мелодичный' }
-];
+// API endpoints
+const API = {
+    getWords: '/api/words',
+    addWord: '/api/words',
+    deleteWord: '/api/words',
+    updateWord: '/api/words'
+};
 
+// Vocabulary state
+let vocabulary = [];
 let currentWordIndex = 0;
 let wordsLearned = 0;
 
@@ -18,22 +19,240 @@ let wordsLearned = 0;
 const wordElement = document.querySelector('.word');
 const translationElement = document.querySelector('.translation');
 const showTranslationButton = document.getElementById('showTranslation');
-const nextWordButton = document.getElementById('nextWord');
+const memoryControls = document.querySelector('.memory-controls');
+const rememberButton = document.getElementById('rememberBtn');
+const forgetButton = document.getElementById('forgetBtn');
+const remindButton = document.getElementById('remindBtn');
 const progressFill = document.querySelector('.progress-fill');
 const progressText = document.querySelector('.progress-text');
+const wordsList = document.getElementById('wordsList');
+const addWordForm = document.getElementById('addWordForm');
+const newWordInput = document.getElementById('newWord');
+const newTranslationInput = document.getElementById('newTranslation');
+const saveWordButton = document.getElementById('saveWord');
+const cancelAddWordButton = document.getElementById('cancelAddWord');
+const addNewWordBtn = document.getElementById('addNewWordBtn');
+const tabButtons = document.querySelectorAll('.tab-button');
+const tabContents = document.querySelectorAll('.tab-content');
+
+// Haptic feedback functions
+function triggerHapticFeedback(type) {
+    if (tg.isVersionAtLeast('6.0')) {
+        switch (type) {
+            case 'success':
+                tg.HapticFeedback.notificationOccurred('success');
+                break;
+            case 'error':
+                tg.HapticFeedback.notificationOccurred('error');
+                break;
+            case 'warning':
+                tg.HapticFeedback.notificationOccurred('warning');
+                break;
+            case 'impact':
+                tg.HapticFeedback.impactOccurred('medium');
+                break;
+            case 'selection':
+                tg.HapticFeedback.selectionChanged();
+                break;
+        }
+    }
+}
+
+// API functions
+async function fetchWords() {
+    try {
+        const user_id = tg.initDataUnsafe?.user?.id;
+        if (!user_id) {
+            throw new Error('User ID is required');
+        }
+
+        const response = await fetch(`${API.getWords}?user_id=${user_id}`);
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to fetch words');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching words:', error);
+        return [];
+    }
+}
+
+async function addWord(word, translation) {
+    try {
+        const user_id = tg.initDataUnsafe?.user?.id;
+        if (!user_id) {
+            throw new Error('User ID is required');
+        }
+
+        const response = await fetch(API.addWord, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                user_id,
+                word,
+                translation
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to add word');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error adding word:', error);
+        throw error;
+    }
+}
+
+async function deleteWord(wordId) {
+    try {
+        const user_id = tg.initDataUnsafe?.user?.id;
+        if (!user_id) {
+            throw new Error('User ID is required');
+        }
+
+        const response = await fetch(`${API.deleteWord}/${wordId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ user_id })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to delete word');
+        }
+
+        const result = await response.json();
+        if (result.success) {
+            vocabulary = vocabulary.filter(word => word.id !== wordId);
+            if (currentWordIndex >= vocabulary.length) {
+                currentWordIndex = 0;
+            }
+            updateWord();
+            updateProgress();
+            renderWordList();
+        }
+        return result;
+    } catch (error) {
+        console.error('Error deleting word:', error);
+        throw error;
+    }
+}
+
+async function updateWordStatus(wordId, status) {
+    try {
+        const user_id = tg.initDataUnsafe?.user?.id;
+        if (!user_id) {
+            throw new Error('User ID is required');
+        }
+
+        const response = await fetch(`${API.updateWord}/${wordId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                user_id,
+                status
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to update word status');
+        }
+
+        const updatedWord = await response.json();
+        const wordIndex = vocabulary.findIndex(w => w.id === wordId);
+        if (wordIndex !== -1) {
+            vocabulary[wordIndex] = updatedWord;
+        }
+
+        switch (status) {
+            case 'remember':
+                triggerHapticFeedback('success');
+                break;
+            case 'forget':
+                triggerHapticFeedback('error');
+                break;
+            case 'remind':
+                triggerHapticFeedback('warning');
+                break;
+        }
+
+        return updatedWord;
+    } catch (error) {
+        console.error('Error updating word status:', error);
+        throw error;
+    }
+}
+
+// Tab switching
+function switchTab(tabName) {
+    tabButtons.forEach(button => {
+        button.classList.toggle('active', button.dataset.tab === tabName);
+    });
+    
+    tabContents.forEach(content => {
+        content.classList.toggle('active', content.id === `${tabName}-tab`);
+    });
+    
+    triggerHapticFeedback('selection');
+}
+
+// Word list rendering
+function renderWordList() {
+    wordsList.innerHTML = '';
+    
+    vocabulary.forEach(word => {
+        const wordElement = document.createElement('div');
+        wordElement.className = 'word-item';
+        wordElement.innerHTML = `
+            <div class="word-item-content">
+                <div class="word-item-word">${word.word}</div>
+                <div class="word-item-translation">${word.translation}</div>
+            </div>
+            <div class="word-item-actions">
+                <button class="tg-button" onclick="deleteWord(${word.id})">Delete</button>
+            </div>
+        `;
+        wordsList.appendChild(wordElement);
+    });
+}
 
 // Initialize the app
-function initApp() {
-    updateWord();
-    updateProgress();
+async function initApp() {
+    vocabulary = await fetchWords();
+    if (vocabulary.length > 0) {
+        updateWord();
+        updateProgress();
+    } else {
+        wordElement.textContent = 'No words available';
+        translationElement.textContent = 'Add some words to start learning';
+    }
+    renderWordList();
 }
 
 // Update the current word display
 function updateWord() {
+    if (vocabulary.length === 0) {
+        wordElement.textContent = 'No words available';
+        translationElement.textContent = 'Add some words to start learning';
+        return;
+    }
+    
     const currentWord = vocabulary[currentWordIndex];
     wordElement.textContent = currentWord.word;
     translationElement.textContent = currentWord.translation;
     translationElement.classList.add('hidden');
+    memoryControls.classList.add('hidden');
 }
 
 // Update progress bar and text
@@ -46,19 +265,68 @@ function updateProgress() {
 // Show translation
 function showTranslation() {
     translationElement.classList.remove('hidden');
+    memoryControls.classList.remove('hidden');
+    triggerHapticFeedback('impact');
 }
 
-// Move to next word
-function nextWord() {
+// Handle memory assessment
+async function handleMemoryAssessment(status) {
+    const currentWord = vocabulary[currentWordIndex];
+    await updateWordStatus(currentWord.id, status);
+    
+    // Move to next word
     wordsLearned++;
     currentWordIndex = (currentWordIndex + 1) % vocabulary.length;
     updateWord();
     updateProgress();
 }
 
+// Handle adding new word
+async function handleAddWord() {
+    const word = newWordInput.value.trim();
+    const translation = newTranslationInput.value.trim();
+    
+    if (!word || !translation) {
+        triggerHapticFeedback('error');
+        alert('Please enter both word and translation');
+        return;
+    }
+    
+    try {
+        await addWord(word, translation);
+        newWordInput.value = '';
+        newTranslationInput.value = '';
+        addWordForm.classList.add('hidden');
+        renderWordList();
+        triggerHapticFeedback('success');
+    } catch (error) {
+        triggerHapticFeedback('error');
+        alert('Error adding word. Please try again.');
+    }
+}
+
 // Event listeners
 showTranslationButton.addEventListener('click', showTranslation);
-nextWordButton.addEventListener('click', nextWord);
+rememberButton.addEventListener('click', () => handleMemoryAssessment('remember'));
+forgetButton.addEventListener('click', () => handleMemoryAssessment('forget'));
+remindButton.addEventListener('click', () => handleMemoryAssessment('remind'));
+saveWordButton.addEventListener('click', handleAddWord);
+cancelAddWordButton.addEventListener('click', () => {
+    addWordForm.classList.add('hidden');
+    newWordInput.value = '';
+    newTranslationInput.value = '';
+    triggerHapticFeedback('selection');
+});
+addNewWordBtn.addEventListener('click', () => {
+    addWordForm.classList.remove('hidden');
+    triggerHapticFeedback('impact');
+});
+
+tabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+        switchTab(button.dataset.tab);
+    });
+});
 
 // Initialize the app when the page loads
-document.addEventListener('DOMContentLoaded', initApp); 
+document.addEventListener('DOMContentLoaded', initApp);
