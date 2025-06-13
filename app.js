@@ -10,6 +10,13 @@ const API = {
     updateWord: '/api/words'
 };
 
+// Common headers for all requests
+const headers = {
+    'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true',
+    'Access-Control-Allow-Origin': '*'
+};
+
 // Vocabulary state
 let vocabulary = [];
 let currentWordIndex = 0;
@@ -66,7 +73,9 @@ async function fetchWords() {
             throw new Error('User ID is required');
         }
 
-        const response = await fetch(`${API.getWords}?user_id=${user_id}`);
+        const response = await fetch(`${API.getWords}?user_id=${user_id}`, {
+            headers
+        });
         if (!response.ok) {
             const error = await response.json();
             throw new Error(error.error || 'Failed to fetch words');
@@ -87,9 +96,7 @@ async function addWord(word, translation) {
 
         const response = await fetch(API.addWord, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers,
             body: JSON.stringify({
                 user_id,
                 word,
@@ -118,9 +125,7 @@ async function deleteWord(wordId) {
 
         const response = await fetch(`${API.deleteWord}/${wordId}`, {
             method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers,
             body: JSON.stringify({ user_id })
         });
 
@@ -155,9 +160,7 @@ async function updateWordStatus(wordId, status) {
 
         const response = await fetch(`${API.updateWord}/${wordId}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers,
             body: JSON.stringify({
                 user_id,
                 status
