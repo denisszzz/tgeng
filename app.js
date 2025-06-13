@@ -14,7 +14,9 @@ const API = {
 const headers = {
     'Content-Type': 'application/json',
     'ngrok-skip-browser-warning': 'true',
-    'Access-Control-Allow-Origin': '*'
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
 };
 
 // Vocabulary state
@@ -103,11 +105,9 @@ async function addWord(word, translation) {
         try {
             const response = await fetch(API.addWord, {
                 method: 'POST',
-                headers: {
-                    ...headers,
-                    'Accept': 'application/json',
-                    'Origin': window.location.origin
-                },
+                mode: 'cors',
+                credentials: 'omit',
+                headers,
                 body: JSON.stringify({
                     user_id,
                     word,
