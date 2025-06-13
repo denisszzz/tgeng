@@ -94,6 +94,12 @@ async function addWord(word, translation) {
             throw new Error('User ID is required');
         }
 
+        alert('Отправляем данные на сервер: ' + JSON.stringify({
+            user_id,
+            word,
+            translation
+        }, null, 2));
+
         const response = await fetch(API.addWord, {
             method: 'POST',
             headers,
@@ -104,14 +110,17 @@ async function addWord(word, translation) {
             })
         });
 
+        alert('Статус ответа: ' + response.status);
+        const responseData = await response.json();
+        alert('Данные ответа: ' + JSON.stringify(responseData, null, 2));
+
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to add word');
+            throw new Error(responseData.error || 'Failed to add word');
         }
 
-        return await response.json();
+        return responseData;
     } catch (error) {
-        console.error('Error adding word:', error);
+        alert('Ошибка при добавлении слова: ' + error.message);
         throw error;
     }
 }
@@ -296,7 +305,8 @@ async function handleAddWord() {
     }
     
     try {
-        await addWord(word, translation);
+        const result = await addWord(word, translation);
+        alert('Слово успешно добавлено: ' + JSON.stringify(result, null, 2));
         newWordInput.value = '';
         newTranslationInput.value = '';
         addWordForm.classList.add('hidden');
@@ -304,7 +314,7 @@ async function handleAddWord() {
         triggerHapticFeedback('success');
     } catch (error) {
         triggerHapticFeedback('error');
-        alert('Error adding word. Please try again.');
+        alert('Ошибка при добавлении слова: ' + error.message);
     }
 }
 
