@@ -471,28 +471,26 @@ async function handleMemoryAssessment(status) {
     if (!currentWord) return;
 
     try {
-        alert('Начало handleMemoryAssessment. Статус: ' + status);
-        
         // Keep status in lowercase with underscores
         const formattedStatus = status.toLowerCase();
-        alert('Отформатированный статус: ' + formattedStatus);
         
-        await updateWordStatus(currentWord.id, formattedStatus);
+        // Update word status
+        const updatedWord = await updateWordStatus(currentWord.id, formattedStatus);
         
-        // Update statistics
-        alert('Обновляем статистику со статусом: ' + formattedStatus);
+        // Update statistics with the same formatted status
         await updateStatistics(formattedStatus);
+        
+        // Update local word progress tracking
         updateWordProgress(currentWord.id, formattedStatus);
         
         // Refresh vocabulary from server
-        alert('Обновляем список слов с сервера');
         vocabulary = await fetchWords();
         
         // Show next word
         updateWord();
         updateProgress();
     } catch (error) {
-        alert('Ошибка в handleMemoryAssessment: ' + error.message);
+        console.error('Error in handleMemoryAssessment:', error);
         throw error;
     }
 }
