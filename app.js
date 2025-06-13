@@ -483,8 +483,12 @@ async function initApp() {
         updateWord();
         updateProgress();
     } else {
-        wordElement.textContent = 'No words available';
-        translationElement.textContent = 'Add some words to start learning';
+        wordElement.textContent = 'Ты молодец!';
+        translationElement.textContent = 'Все слова повторены. Приходи завтра.';
+        translationElement.classList.remove('hidden');
+        showTranslationButton.style.display = 'none';
+        memoryControls.classList.add('hidden');
+        triggerHapticFeedback('success');
     }
     
     // Initial render of word list
