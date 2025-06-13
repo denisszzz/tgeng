@@ -395,10 +395,10 @@ function updateWord() {
 
     // Select a random word from words that need review
     const randomIndex = Math.floor(Math.random() * wordsToReview.length);
-    const currentWord = wordsToReview[randomIndex];
+    currentWordIndex = vocabulary.findIndex(w => w.id === wordsToReview[randomIndex].id);
     
-    wordElement.textContent = currentWord.word;
-    translationElement.textContent = currentWord.translation;
+    wordElement.textContent = vocabulary[currentWordIndex].word;
+    translationElement.textContent = vocabulary[currentWordIndex].translation;
     translationElement.classList.add('hidden');
     memoryControls.classList.add('hidden');
 }
@@ -422,16 +422,18 @@ async function handleMemoryAssessment(status) {
     const currentWord = vocabulary[currentWordIndex];
     if (!currentWord) return;
 
-    await updateWordStatus(currentWord.id, status);
-    
-    // Refresh vocabulary from server
-    vocabulary = await fetchWords();
-    
-    // Move to next word
-    wordsLearned++;
-    currentWordIndex = (currentWordIndex + 1) % vocabulary.length;
-    updateWord();
-    updateProgress();
+    try {
+        await updateWordStatus(currentWord.id, status);
+        
+        // Refresh vocabulary from server
+        vocabulary = await fetchWords();
+        
+        // Show next word
+        updateWord();
+        updateProgress();
+    } catch (error) {
+        alert('Error updating word status: ' + error.message);
+    }
 }
 
 // Handle adding new word
