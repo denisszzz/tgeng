@@ -100,7 +100,8 @@ async function fetchWords() {
             const error = await response.json();
             throw new Error(error.error || 'Failed to fetch words');
         }
-        return await response.json();
+        const data = await response.json();
+        return data === null ? [] : data;
     } catch (error) {
         console.error('Error fetching words:', error);
         return [];
@@ -251,23 +252,34 @@ async function updateWordStatus(wordId, status) {
 async function renderWordList() {
     wordsList.innerHTML = '';
     
-    const allWords = await fetchAllWords();
-    
-    allWords.forEach(word => {
-        const wordElement = document.createElement('div');
-        wordElement.className = 'word-item';
-        wordElement.innerHTML = `
-            <div class="word-item-content">
-                <div class="word-item-word">${word.word}</div>
-                <div class="word-item-translation">${word.translation}</div>
-            </div>
-            <div class="word-item-actions">
-                <button class="tg-button edit-button" onclick="showEditForm(${word.id})">Edit</button>
-                <button class="tg-button delete-button" onclick="deleteWord(${word.id})">Delete</button>
-            </div>
-        `;
-        wordsList.appendChild(wordElement);
-    });
+    try {
+        const allWords = await fetchAllWords();
+        const wordsToDisplay = allWords === null ? [] : allWords;
+        
+        if (wordsToDisplay.length === 0) {
+            wordsList.innerHTML = '<div class="no-words-message">Нет добавленных слов</div>';
+            return;
+        }
+        
+        wordsToDisplay.forEach(word => {
+            const wordElement = document.createElement('div');
+            wordElement.className = 'word-item';
+            wordElement.innerHTML = `
+                <div class="word-item-content">
+                    <div class="word-item-word">${word.word}</div>
+                    <div class="word-item-translation">${word.translation}</div>
+                </div>
+                <div class="word-item-actions">
+                    <button class="tg-button edit-button" onclick="showEditForm(${word.id})">Edit</button>
+                    <button class="tg-button delete-button" onclick="deleteWord(${word.id})">Delete</button>
+                </div>
+            `;
+            wordsList.appendChild(wordElement);
+        });
+    } catch (error) {
+        console.error('Error rendering word list:', error);
+        wordsList.innerHTML = '<div class="error-message">Ошибка при загрузке слов</div>';
+    }
 }
 
 // Tab switching
