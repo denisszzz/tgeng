@@ -424,6 +424,9 @@ async function handleMemoryAssessment(status) {
 
     await updateWordStatus(currentWord.id, status);
     
+    // Refresh vocabulary from server
+    vocabulary = await fetchWords();
+    
     // Move to next word
     wordsLearned++;
     currentWordIndex = (currentWordIndex + 1) % vocabulary.length;
