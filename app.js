@@ -482,8 +482,12 @@ async function initApp() {
 // Update the current word display
 function updateWord() {
     if (vocabulary.length === 0) {
-        wordElement.textContent = 'No words available';
-        translationElement.textContent = 'Add some words to start learning';
+        wordElement.textContent = 'Ты молодец!';
+        translationElement.textContent = 'Все слова повторены. Приходи завтра.';
+        translationElement.classList.remove('hidden');
+        showTranslationButton.style.display = 'none';
+        memoryControls.classList.add('hidden');
+        triggerHapticFeedback('success');
         return;
     }
     
@@ -491,6 +495,7 @@ function updateWord() {
     wordElement.textContent = vocabulary[currentWordIndex].word;
     translationElement.textContent = vocabulary[currentWordIndex].translation;
     translationElement.classList.add('hidden');
+    showTranslationButton.style.display = 'block';
     memoryControls.classList.add('hidden');
 }
 
@@ -503,6 +508,9 @@ function updateProgress() {
 
 // Show translation
 function showTranslation() {
+    if (vocabulary.length === 0) {
+        return;
+    }
     translationElement.classList.remove('hidden');
     memoryControls.classList.remove('hidden');
     triggerHapticFeedback('impact');
