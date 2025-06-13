@@ -4,10 +4,10 @@ tg.expand();
 
 // API endpoints
 const API = {
-    getWords: '/api/words',
-    addWord: '/api/words',
-    deleteWord: '/api/words',
-    updateWord: '/api/words'
+    getWords: 'https://545a-88-210-3-111.ngrok-free.app/api/words',
+    addWord: 'https://545a-88-210-3-111.ngrok-free.app/api/words',
+    deleteWord: 'https://545a-88-210-3-111.ngrok-free.app/api/words',
+    updateWord: 'https://545a-88-210-3-111.ngrok-free.app/api/words'
 };
 
 // Common headers for all requests
