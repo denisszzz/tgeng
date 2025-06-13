@@ -226,21 +226,30 @@ async function updateWordStatus(wordId, status) {
             throw new Error('User ID is required');
         }
 
+        const requestData = {
+            user_id,
+            status
+        };
+
+        alert('Отправляем данные на сервер:\n' + JSON.stringify(requestData, null, 2));
+
         const response = await fetch(`${API.updateWordStatus}/${wordId}/status`, {
             method: 'PUT',
             headers,
-            body: JSON.stringify({
-                user_id,
-                status
-            })
+            body: JSON.stringify(requestData)
         });
 
+        alert('Статус ответа: ' + response.status);
+
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to update word status');
+            const errorData = await response.json();
+            alert('Ошибка от сервера:\n' + JSON.stringify(errorData, null, 2));
+            throw new Error(errorData.error || 'Failed to update word status');
         }
 
         const updatedWord = await response.json();
+        alert('Успешный ответ от сервера:\n' + JSON.stringify(updatedWord, null, 2));
+
         const wordIndex = vocabulary.findIndex(w => w.id === wordId);
         if (wordIndex !== -1) {
             vocabulary[wordIndex] = updatedWord;
@@ -264,6 +273,7 @@ async function updateWordStatus(wordId, status) {
         return updatedWord;
     } catch (error) {
         console.error('Error updating word status:', error);
+        alert('Полная ошибка:\n' + error.message + '\n\nStack trace:\n' + error.stack);
         throw error;
     }
 }
