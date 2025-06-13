@@ -382,15 +382,13 @@ async function updateStatistics(status) {
             throw new Error('User ID is required');
         }
 
-        alert('Начало updateStatistics. Статус: ' + status);
-
         // Create date in RFC3339 format
         const now = new Date();
         const date = now.toISOString();
 
-        // Convert status to the format expected by statistics endpoint
+        // Map status to the exact format expected by the server
         let statisticsStatus;
-        switch (status) {
+        switch (status.toLowerCase()) {
             case 'remember':
                 statisticsStatus = 'LEARNED';
                 break;
@@ -401,7 +399,7 @@ async function updateStatistics(status) {
                 statisticsStatus = 'REPEATED';
                 break;
             default:
-                throw new Error('Invalid status for statistics: ' + status);
+                throw new Error(`Invalid status for statistics: ${status}`);
         }
 
         const requestData = {
@@ -410,26 +408,20 @@ async function updateStatistics(status) {
             date
         };
 
-        alert('Отправляем данные статистики:\n' + JSON.stringify(requestData, null, 2));
-
         const response = await fetch(API.updateStatistics, {
             method: 'POST',
             headers,
             body: JSON.stringify(requestData)
         });
 
-        alert('Статус ответа статистики: ' + response.status);
-
-        const responseData = await response.json();
-        alert('Ответ статистики:\n' + JSON.stringify(responseData, null, 2));
-
         if (!response.ok) {
-            throw new Error(responseData.error || 'Failed to update statistics');
+            const errorData = await response.json();
+            throw new Error(errorData.error || `Failed to update statistics: ${response.status}`);
         }
 
-        return responseData;
+        return await response.json();
     } catch (error) {
-        alert('Ошибка в updateStatistics: ' + error.message);
+        console.error('Error in updateStatistics:', error);
         throw error;
     }
 }
