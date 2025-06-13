@@ -4,11 +4,18 @@ tg.expand();
 
 // API endpoints
 const API = {
+    // Words endpoints
     getWords: 'https://545a-88-210-3-111.ngrok-free.app/api/words',
     addWord: 'https://545a-88-210-3-111.ngrok-free.app/api/words',
     deleteWord: 'https://545a-88-210-3-111.ngrok-free.app/api/words',
-    updateWord: 'https://545a-88-210-3-111.ngrok-free.app/api/words',
-    updateTranslation: 'https://545a-88-210-3-111.ngrok-free.app/api/words'
+    updateWordStatus: 'https://545a-88-210-3-111.ngrok-free.app/api/words',
+    updateTranslation: 'https://545a-88-210-3-111.ngrok-free.app/api/words',
+
+    // Statistics endpoints
+    getStatistics: 'https://545a-88-210-3-111.ngrok-free.app/api/statistics',
+    updateStatistics: 'https://545a-88-210-3-111.ngrok-free.app/api/statistics',
+    getWordProgress: 'https://545a-88-210-3-111.ngrok-free.app/api/statistics/words',
+    getDifficultWords: 'https://545a-88-210-3-111.ngrok-free.app/api/statistics/words/difficult'
 };
 
 // Common headers for all requests
@@ -219,35 +226,12 @@ async function updateWordStatus(wordId, status) {
             throw new Error('User ID is required');
         }
 
-        // Find current word to get its repetition count
-        const currentWord = vocabulary.find(w => w.id === wordId);
-        if (!currentWord) {
-            throw new Error('Word not found');
-        }
-
-        // Calculate next review date only for specific statuses
-        let nextReview = null;
-        let newRepetitionCount = currentWord.repetitionCount || 0;
-
-        if (status === 'remember' || status === 'forget' || status === 'repeat_tomorrow') {
-            nextReview = calculateNextReview(status, newRepetitionCount);
-            
-            // Update repetition count only for 'remember' status
-            if (status === 'remember') {
-                newRepetitionCount += 1;
-            } else if (status === 'forget') {
-                newRepetitionCount = Math.max(newRepetitionCount - 1, 0);
-            }
-        }
-
-        const response = await fetch(`${API.updateWord}/${wordId}`, {
+        const response = await fetch(`${API.updateWordStatus}/${wordId}/status`, {
             method: 'PUT',
             headers,
             body: JSON.stringify({
                 user_id,
-                status,
-                nextReview: nextReview ? nextReview.toISOString() : null,
-                repetitionCount: newRepetitionCount
+                status
             })
         });
 
@@ -262,12 +246,18 @@ async function updateWordStatus(wordId, status) {
             vocabulary[wordIndex] = updatedWord;
         }
 
+        // Update statistics after word status update
+        await updateStatistics(status);
+
         switch (status) {
             case 'remember':
                 triggerHapticFeedback('success');
                 break;
             case 'forget':
                 triggerHapticFeedback('error');
+                break;
+            case 'repeat_tomorrow':
+                triggerHapticFeedback('warning');
                 break;
         }
 
@@ -296,7 +286,7 @@ function switchTab(tabName) {
     triggerHapticFeedback('selection');
 }
 
-// Word list renderingё
+// Word list rendering
 function renderWordList() {
     wordsList.innerHTML = '';
     
@@ -377,43 +367,33 @@ async function handleUpdateWord() {
 }
 
 // Update statistics
-function updateStatistics(status) {
-    const today = new Date().toISOString().split('T')[0];
-    
-    // Initialize daily progress if not exists
-    if (!statistics.dailyProgress[today]) {
-        statistics.dailyProgress[today] = {
-            learned: 0,
-            forgotten: 0,
-            repeated: 0
-        };
-    }
+async function updateStatistics(status) {
+    try {
+        const user_id = tg.initDataUnsafe?.user?.id;
+        if (!user_id) {
+            throw new Error('User ID is required');
+        }
 
-    // Update daily statistics
-    switch (status) {
-        case 'remember':
-            statistics.wordsLearned++;
-            statistics.dailyProgress[today].learned++;
-            break;
-        case 'forget':
-            statistics.wordsForgotten++;
-            statistics.dailyProgress[today].forgotten++;
-            break;
-        case 'repeat_tomorrow':
-            statistics.wordsRepeated++;
-            statistics.dailyProgress[today].repeated++;
-            break;
-    }
+        const response = await fetch(API.updateStatistics, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                user_id,
+                status,
+                date: new Date().toISOString().split('T')[0]
+            })
+        });
 
-    // Update streak
-    if (!statistics.lastReviewDate || 
-        new Date(statistics.lastReviewDate).toISOString().split('T')[0] !== today) {
-        statistics.streakDays++;
-    }
-    statistics.lastReviewDate = today;
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to update statistics');
+        }
 
-    // Save statistics to localStorage
-    localStorage.setItem('vocabularyStatistics', JSON.stringify(statistics));
+        return await response.json();
+    } catch (error) {
+        console.error('Error updating statistics:', error);
+        throw error;
+    }
 }
 
 // Load statistics from localStorage
@@ -657,6 +637,54 @@ function updateDifficultWords() {
         `;
         difficultWordsContainer.appendChild(wordElement);
     });
+}
+
+// Get word progress
+async function getWordProgress(wordId) {
+    try {
+        const user_id = tg.initDataUnsafe?.user?.id;
+        if (!user_id) {
+            throw new Error('User ID is required');
+        }
+
+        const response = await fetch(`${API.getWordProgress}/${wordId}/progress?user_id=${user_id}`, {
+            headers
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to get word progress');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error getting word progress:', error);
+        throw error;
+    }
+}
+
+// Get difficult words
+async function getDifficultWords() {
+    try {
+        const user_id = tg.initDataUnsafe?.user?.id;
+        if (!user_id) {
+            throw new Error('User ID is required');
+        }
+
+        const response = await fetch(`${API.getDifficultWords}?user_id=${user_id}`, {
+            headers
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to get difficult words');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error getting difficult words:', error);
+        throw error;
+    }
 }
 
 // Initialize the app when the page loads
