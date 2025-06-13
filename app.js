@@ -213,16 +213,20 @@ async function updateWordStatus(wordId, status) {
             throw new Error('Word not found');
         }
 
-        // Calculate next review date
-        const nextReview = calculateNextReview(
-            status,
-            currentWord.repetitionCount || 0
-        );
+        // Calculate next review date only for specific statuses
+        let nextReview = null;
+        let newRepetitionCount = currentWord.repetitionCount || 0;
 
-        // Calculate new repetition count
-        const newRepetitionCount = status === 'remember' 
-            ? (currentWord.repetitionCount || 0) + 1 
-            : Math.max((currentWord.repetitionCount || 0) - 1, 0);
+        if (status === 'remember' || status === 'forget' || status === 'repeat_tomorrow') {
+            nextReview = calculateNextReview(status, newRepetitionCount);
+            
+            // Update repetition count only for 'remember' status
+            if (status === 'remember') {
+                newRepetitionCount += 1;
+            } else if (status === 'forget') {
+                newRepetitionCount = Math.max(newRepetitionCount - 1, 0);
+            }
+        }
 
         const response = await fetch(`${API.updateWord}/${wordId}`, {
             method: 'PUT',
@@ -230,7 +234,7 @@ async function updateWordStatus(wordId, status) {
             body: JSON.stringify({
                 user_id,
                 status,
-                nextReview: nextReview.toISOString(),
+                nextReview: nextReview ? nextReview.toISOString() : null,
                 repetitionCount: newRepetitionCount
             })
         });
@@ -416,6 +420,8 @@ function showTranslation() {
 // Handle memory assessment
 async function handleMemoryAssessment(status) {
     const currentWord = vocabulary[currentWordIndex];
+    if (!currentWord) return;
+
     await updateWordStatus(currentWord.id, status);
     
     // Move to next word
