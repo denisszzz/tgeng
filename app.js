@@ -38,11 +38,6 @@ function calculateNextReview(status, currentRepetitionCount) {
         const previousInterval = REPETITION_INTERVALS[Math.max(currentRepetitionCount - 1, 0)];
         now.setDate(now.getDate() + previousInterval);
         return now;
-    } else if (status === 'remind') {
-        // Stay at current interval
-        const currentInterval = REPETITION_INTERVALS[Math.min(currentRepetitionCount, REPETITION_INTERVALS.length - 1)];
-        now.setDate(now.getDate() + currentInterval);
-        return now;
     } else if (status === 'repeat_tomorrow') {
         // Set review for tomorrow
         now.setDate(now.getDate() + 1);
@@ -59,7 +54,6 @@ const showTranslationButton = document.getElementById('showTranslation');
 const memoryControls = document.querySelector('.memory-controls');
 const rememberButton = document.getElementById('rememberBtn');
 const forgetButton = document.getElementById('forgetBtn');
-const remindButton = document.getElementById('remindBtn');
 const repeatTomorrowButton = document.getElementById('repeatTomorrowBtn');
 const progressFill = document.querySelector('.progress-fill');
 const progressText = document.querySelector('.progress-text');
@@ -257,9 +251,6 @@ async function updateWordStatus(wordId, status) {
                 break;
             case 'forget':
                 triggerHapticFeedback('error');
-                break;
-            case 'remind':
-                triggerHapticFeedback('warning');
                 break;
         }
 
@@ -473,7 +464,6 @@ async function handleAddWord() {
 showTranslationButton.addEventListener('click', showTranslation);
 rememberButton.addEventListener('click', () => handleMemoryAssessment('remember'));
 forgetButton.addEventListener('click', () => handleMemoryAssessment('forget'));
-remindButton.addEventListener('click', () => handleMemoryAssessment('remind'));
 repeatTomorrowButton.addEventListener('click', () => handleMemoryAssessment('repeat_tomorrow'));
 saveWordButton.addEventListener('click', handleAddWord);
 cancelAddWordButton.addEventListener('click', () => {
