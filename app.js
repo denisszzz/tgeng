@@ -311,12 +311,11 @@ function showEditForm(wordId) {
 // Handle word update
 async function handleUpdateWord() {
     const wordId = document.getElementById('editWordId').value;
-    const word = document.getElementById('editWord').value.trim();
     const translation = document.getElementById('editTranslation').value.trim();
     
-    if (!word || !translation) {
+    if (!translation) {
         triggerHapticFeedback('error');
-        alert('Please enter both word and translation');
+        alert('Please enter translation');
         return;
     }
     
@@ -326,7 +325,6 @@ async function handleUpdateWord() {
             throw new Error('User ID is required');
         }
 
-        // Update translation using PATCH request
         const response = await fetch(`${API.updateTranslation}/${wordId}/translation`, {
             method: 'PATCH',
             headers,
@@ -341,12 +339,9 @@ async function handleUpdateWord() {
             throw new Error(error.error || 'Failed to update translation');
         }
 
-        const updatedWord = await response.json();
-        const wordIndex = vocabulary.findIndex(w => w.id === wordId);
-        if (wordIndex !== -1) {
-            vocabulary[wordIndex] = updatedWord;
-        }
-
+        // Refresh vocabulary from server
+        vocabulary = await fetchWords();
+        
         document.getElementById('editWordForm').classList.add('hidden');
         document.getElementById('editWord').value = '';
         document.getElementById('editTranslation').value = '';
