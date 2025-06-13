@@ -241,18 +241,16 @@ async function updateWordStatus(wordId, status) {
 
         alert('Статус ответа: ' + response.status);
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            alert('Ошибка от сервера:\n' + JSON.stringify(errorData, null, 2));
-            throw new Error(errorData.error || 'Failed to update word status');
-        }
+        const responseData = await response.json();
+        alert('Ответ от сервера:\n' + JSON.stringify(responseData, null, 2));
 
-        const updatedWord = await response.json();
-        alert('Успешный ответ от сервера:\n' + JSON.stringify(updatedWord, null, 2));
+        if (!response.ok) {
+            throw new Error(responseData.error || 'Failed to update word status');
+        }
 
         const wordIndex = vocabulary.findIndex(w => w.id === wordId);
         if (wordIndex !== -1) {
-            vocabulary[wordIndex] = updatedWord;
+            vocabulary[wordIndex] = responseData;
         }
 
         // Update statistics after word status update
@@ -270,7 +268,7 @@ async function updateWordStatus(wordId, status) {
                 break;
         }
 
-        return updatedWord;
+        return responseData;
     } catch (error) {
         console.error('Error updating word status:', error);
         alert('Полная ошибка:\n' + error.message + '\n\nStack trace:\n' + error.stack);
