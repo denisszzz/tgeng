@@ -6,6 +6,7 @@ tg.expand();
 const API = {
     // Words endpoints
     getWords: 'https://545a-88-210-3-111.ngrok-free.app/api/words',
+    getAllWords: 'https://545a-88-210-3-111.ngrok-free.app/api/words/all',
     addWord: 'https://545a-88-210-3-111.ngrok-free.app/api/words',
     deleteWord: 'https://545a-88-210-3-111.ngrok-free.app/api/words',
     updateWordStatus: 'https://545a-88-210-3-111.ngrok-free.app/api/words',
@@ -102,6 +103,27 @@ async function fetchWords() {
         return await response.json();
     } catch (error) {
         console.error('Error fetching words:', error);
+        return [];
+    }
+}
+
+async function fetchAllWords() {
+    try {
+        const user_id = tg.initDataUnsafe?.user?.id;
+        if (!user_id) {
+            throw new Error('User ID is required');
+        }
+
+        const response = await fetch(`${API.getAllWords}?user_id=${user_id}`, {
+            headers
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to fetch all words');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching all words:', error);
         return [];
     }
 }
@@ -225,6 +247,29 @@ async function updateWordStatus(wordId, status) {
     }
 }
 
+// Word list rendering
+async function renderWordList() {
+    wordsList.innerHTML = '';
+    
+    const allWords = await fetchAllWords();
+    
+    allWords.forEach(word => {
+        const wordElement = document.createElement('div');
+        wordElement.className = 'word-item';
+        wordElement.innerHTML = `
+            <div class="word-item-content">
+                <div class="word-item-word">${word.word}</div>
+                <div class="word-item-translation">${word.translation}</div>
+            </div>
+            <div class="word-item-actions">
+                <button class="tg-button edit-button" onclick="showEditForm(${word.id})">Edit</button>
+                <button class="tg-button delete-button" onclick="deleteWord(${word.id})">Delete</button>
+            </div>
+        `;
+        wordsList.appendChild(wordElement);
+    });
+}
+
 // Tab switching
 function switchTab(tabName) {
     tabButtons.forEach(button => {
@@ -240,28 +285,12 @@ function switchTab(tabName) {
         updateStatisticsDisplay();
     }
     
-    triggerHapticFeedback('selection');
-}
-
-// Word list rendering
-function renderWordList() {
-    wordsList.innerHTML = '';
+    // Load all words when switching to words tab
+    if (tabName === 'words') {
+        renderWordList();
+    }
     
-    vocabulary.forEach(word => {
-        const wordElement = document.createElement('div');
-        wordElement.className = 'word-item';
-        wordElement.innerHTML = `
-            <div class="word-item-content">
-                <div class="word-item-word">${word.word}</div>
-                <div class="word-item-translation">${word.translation}</div>
-            </div>
-            <div class="word-item-actions">
-                <button class="tg-button edit-button" onclick="showEditForm(${word.id})">Edit</button>
-                <button class="tg-button delete-button" onclick="deleteWord(${word.id})">Delete</button>
-            </div>
-        `;
-        wordsList.appendChild(wordElement);
-    });
+    triggerHapticFeedback('selection');
 }
 
 // Show edit form
@@ -445,7 +474,9 @@ async function initApp() {
         wordElement.textContent = 'No words available';
         translationElement.textContent = 'Add some words to start learning';
     }
-    renderWordList();
+    
+    // Initial render of word list
+    await renderWordList();
 }
 
 // Update the current word display
