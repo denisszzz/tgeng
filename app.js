@@ -21,6 +21,37 @@ let vocabulary = [];
 let currentWordIndex = 0;
 let wordsLearned = 0;
 
+// Spaced repetition intervals (in days)
+const REPETITION_INTERVALS = [1, 3, 7, 14, 30];
+
+// Calculate next review date based on current status and repetition count
+function calculateNextReview(status, currentRepetitionCount) {
+    const now = new Date();
+    
+    if (status === 'remember') {
+        // Move to next interval
+        const nextInterval = REPETITION_INTERVALS[Math.min(currentRepetitionCount, REPETITION_INTERVALS.length - 1)];
+        now.setDate(now.getDate() + nextInterval);
+        return now;
+    } else if (status === 'forget') {
+        // Go back one interval, but not less than 1 day
+        const previousInterval = REPETITION_INTERVALS[Math.max(currentRepetitionCount - 1, 0)];
+        now.setDate(now.getDate() + previousInterval);
+        return now;
+    } else if (status === 'remind') {
+        // Stay at current interval
+        const currentInterval = REPETITION_INTERVALS[Math.min(currentRepetitionCount, REPETITION_INTERVALS.length - 1)];
+        now.setDate(now.getDate() + currentInterval);
+        return now;
+    } else if (status === 'repeat_tomorrow') {
+        // Set review for tomorrow
+        now.setDate(now.getDate() + 1);
+        return now;
+    }
+    
+    return now;
+}
+
 // DOM elements
 const wordElement = document.querySelector('.word');
 const translationElement = document.querySelector('.translation');
@@ -29,6 +60,7 @@ const memoryControls = document.querySelector('.memory-controls');
 const rememberButton = document.getElementById('rememberBtn');
 const forgetButton = document.getElementById('forgetBtn');
 const remindButton = document.getElementById('remindBtn');
+const repeatTomorrowButton = document.getElementById('repeatTomorrowBtn');
 const progressFill = document.querySelector('.progress-fill');
 const progressText = document.querySelector('.progress-text');
 const wordsList = document.getElementById('wordsList');
@@ -180,12 +212,31 @@ async function updateWordStatus(wordId, status) {
             throw new Error('User ID is required');
         }
 
+        // Find current word to get its repetition count
+        const currentWord = vocabulary.find(w => w.id === wordId);
+        if (!currentWord) {
+            throw new Error('Word not found');
+        }
+
+        // Calculate next review date
+        const nextReview = calculateNextReview(
+            status,
+            currentWord.repetitionCount || 0
+        );
+
+        // Calculate new repetition count
+        const newRepetitionCount = status === 'remember' 
+            ? (currentWord.repetitionCount || 0) + 1 
+            : Math.max((currentWord.repetitionCount || 0) - 1, 0);
+
         const response = await fetch(`${API.updateWord}/${wordId}`, {
             method: 'PUT',
             headers,
             body: JSON.stringify({
                 user_id,
-                status
+                status,
+                nextReview: nextReview.toISOString(),
+                repetitionCount: newRepetitionCount
             })
         });
 
@@ -245,11 +296,76 @@ function renderWordList() {
                 <div class="word-item-translation">${word.translation}</div>
             </div>
             <div class="word-item-actions">
-                <button class="tg-button" onclick="deleteWord(${word.id})">Delete</button>
+                <button class="tg-button edit-button" onclick="showEditForm(${word.id})">Edit</button>
+                <button class="tg-button delete-button" onclick="deleteWord(${word.id})">Delete</button>
             </div>
         `;
         wordsList.appendChild(wordElement);
     });
+}
+
+// Show edit form
+function showEditForm(wordId) {
+    const word = vocabulary.find(w => w.id === wordId);
+    if (!word) return;
+
+    document.getElementById('editWordId').value = wordId;
+    document.getElementById('editWord').value = word.word;
+    document.getElementById('editTranslation').value = word.translation;
+    document.getElementById('editWordForm').classList.remove('hidden');
+    triggerHapticFeedback('impact');
+}
+
+// Handle word update
+async function handleUpdateWord() {
+    const wordId = document.getElementById('editWordId').value;
+    const word = document.getElementById('editWord').value.trim();
+    const translation = document.getElementById('editTranslation').value.trim();
+    
+    if (!word || !translation) {
+        triggerHapticFeedback('error');
+        alert('Please enter both word and translation');
+        return;
+    }
+    
+    try {
+        const user_id = tg.initDataUnsafe?.user?.id;
+        if (!user_id) {
+            throw new Error('User ID is required');
+        }
+
+        const response = await fetch(`${API.updateWord}/${wordId}`, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify({
+                user_id,
+                word,
+                translation
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to update word');
+        }
+
+        const updatedWord = await response.json();
+        const wordIndex = vocabulary.findIndex(w => w.id === wordId);
+        if (wordIndex !== -1) {
+            vocabulary[wordIndex] = updatedWord;
+        }
+
+        document.getElementById('editWordForm').classList.add('hidden');
+        document.getElementById('editWord').value = '';
+        document.getElementById('editTranslation').value = '';
+        
+        renderWordList();
+        updateWord();
+        triggerHapticFeedback('success');
+    } catch (error) {
+        triggerHapticFeedback('error');
+        alert('Error updating word: ' + error.message);
+    }
 }
 
 // Initialize the app
@@ -273,7 +389,23 @@ function updateWord() {
         return;
     }
     
-    const currentWord = vocabulary[currentWordIndex];
+    // Filter words that need review
+    const now = new Date();
+    const wordsToReview = vocabulary.filter(word => {
+        if (!word.nextReview) return true;
+        return new Date(word.nextReview) <= now;
+    });
+
+    if (wordsToReview.length === 0) {
+        wordElement.textContent = 'No words to review';
+        translationElement.textContent = 'All words are up to date!';
+        return;
+    }
+
+    // Select a random word from words that need review
+    const randomIndex = Math.floor(Math.random() * wordsToReview.length);
+    const currentWord = wordsToReview[randomIndex];
+    
     wordElement.textContent = currentWord.word;
     translationElement.textContent = currentWord.translation;
     translationElement.classList.add('hidden');
@@ -323,7 +455,13 @@ async function handleAddWord() {
         newWordInput.value = '';
         newTranslationInput.value = '';
         addWordForm.classList.add('hidden');
+        
+        // Обновляем список слов с сервера
+        vocabulary = await fetchWords();
         renderWordList();
+        updateWord();
+        updateProgress();
+        
         triggerHapticFeedback('success');
     } catch (error) {
         triggerHapticFeedback('error');
@@ -336,6 +474,7 @@ showTranslationButton.addEventListener('click', showTranslation);
 rememberButton.addEventListener('click', () => handleMemoryAssessment('remember'));
 forgetButton.addEventListener('click', () => handleMemoryAssessment('forget'));
 remindButton.addEventListener('click', () => handleMemoryAssessment('remind'));
+repeatTomorrowButton.addEventListener('click', () => handleMemoryAssessment('repeat_tomorrow'));
 saveWordButton.addEventListener('click', handleAddWord);
 cancelAddWordButton.addEventListener('click', () => {
     addWordForm.classList.add('hidden');
@@ -352,6 +491,14 @@ tabButtons.forEach(button => {
     button.addEventListener('click', () => {
         switchTab(button.dataset.tab);
     });
+});
+
+document.getElementById('updateWord').addEventListener('click', handleUpdateWord);
+document.getElementById('cancelEditWord').addEventListener('click', () => {
+    document.getElementById('editWordForm').classList.add('hidden');
+    document.getElementById('editWord').value = '';
+    document.getElementById('editTranslation').value = '';
+    triggerHapticFeedback('selection');
 });
 
 // Initialize the app when the page loads

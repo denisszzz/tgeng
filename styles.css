@@ -291,3 +291,29 @@ body {
     gap: 12px;
     margin-top: 16px;
 }
+
+.edit-word-form {
+    margin-top: 24px;
+    padding: 20px;
+    background-color: var(--tg-theme-bg-color);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.edit-word-form.hidden {
+    display: none;
+}
+
+.edit-word-form h2 {
+    font-size: 18px;
+    margin: 0 0 16px 0;
+    text-align: center;
+}
+
+.word-item-actions button.edit-button {
+    background-color: var(--tg-theme-button-color);
+}
+
+.word-item-actions button.delete-button {
+    background-color: var(--forget-color);
+}

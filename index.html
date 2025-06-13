@@ -37,9 +37,9 @@
                     <span class="button-icon">❌</span>
                     Forget
                 </button>
-                <button class="tg-button memory-button remind" id="remindBtn">
-                    <span class="button-icon">⏰</span>
-                    Remind Later
+                <button class="tg-button memory-button repeat" id="repeatTomorrowBtn">
+                    <span class="button-icon">🌞</span>
+                    Repeat Tomorrow
                 </button>
             </div>
 
@@ -73,6 +73,21 @@
                 <div class="form-buttons">
                     <button class="tg-button" id="saveWord">Save</button>
                     <button class="tg-button cancel-button" id="cancelAddWord">Cancel</button>
+                </div>
+            </div>
+
+            <div class="edit-word-form hidden" id="editWordForm">
+                <h2>Edit Word</h2>
+                <input type="hidden" id="editWordId">
+                <div class="form-group">
+                    <input type="text" id="editWord" placeholder="Enter English word" class="tg-input">
+                </div>
+                <div class="form-group">
+                    <input type="text" id="editTranslation" placeholder="Enter translation" class="tg-input">
+                </div>
+                <div class="form-buttons">
+                    <button class="tg-button" id="updateWord">Update</button>
+                    <button class="tg-button cancel-button" id="cancelEditWord">Cancel</button>
                 </div>
             </div>
         </div>
