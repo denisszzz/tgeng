@@ -23,7 +23,19 @@ let currentWordIndex = 0;
 let wordsLearned = 0;
 
 // Spaced repetition intervals (in days)
-const REPETITION_INTERVALS = [1, 3, 7, 14, 30];
+const REPETITION_INTERVALS = [1, 3, 7, 14, 30, 60, 90, 180, 360, 720, 1440];
+
+// Statistics tracking
+const statistics = {
+    totalWords: 0,
+    wordsLearned: 0,
+    wordsForgotten: 0,
+    wordsRepeated: 0,
+    streakDays: 0,
+    lastReviewDate: null,
+    dailyProgress: {},
+    wordProgress: {}
+};
 
 // Calculate next review date based on current status and repetition count
 function calculateNextReview(status, currentRepetitionCount) {
@@ -276,6 +288,11 @@ function switchTab(tabName) {
         content.classList.toggle('active', content.id === `${tabName}-tab`);
     });
     
+    // Update statistics when switching to stats tab
+    if (tabName === 'stats') {
+        updateStatisticsDisplay();
+    }
+    
     triggerHapticFeedback('selection');
 }
 
@@ -359,62 +376,81 @@ async function handleUpdateWord() {
     }
 }
 
-// Initialize the app
-async function initApp() {
-    vocabulary = await fetchWords();
-    if (vocabulary.length > 0) {
-        updateWord();
-        updateProgress();
-    } else {
-        wordElement.textContent = 'No words available';
-        translationElement.textContent = 'Add some words to start learning';
+// Update statistics
+function updateStatistics(status) {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Initialize daily progress if not exists
+    if (!statistics.dailyProgress[today]) {
+        statistics.dailyProgress[today] = {
+            learned: 0,
+            forgotten: 0,
+            repeated: 0
+        };
     }
-    renderWordList();
+
+    // Update daily statistics
+    switch (status) {
+        case 'remember':
+            statistics.wordsLearned++;
+            statistics.dailyProgress[today].learned++;
+            break;
+        case 'forget':
+            statistics.wordsForgotten++;
+            statistics.dailyProgress[today].forgotten++;
+            break;
+        case 'repeat_tomorrow':
+            statistics.wordsRepeated++;
+            statistics.dailyProgress[today].repeated++;
+            break;
+    }
+
+    // Update streak
+    if (!statistics.lastReviewDate || 
+        new Date(statistics.lastReviewDate).toISOString().split('T')[0] !== today) {
+        statistics.streakDays++;
+    }
+    statistics.lastReviewDate = today;
+
+    // Save statistics to localStorage
+    localStorage.setItem('vocabularyStatistics', JSON.stringify(statistics));
 }
 
-// Update the current word display
-function updateWord() {
-    if (vocabulary.length === 0) {
-        wordElement.textContent = 'No words available';
-        translationElement.textContent = 'Add some words to start learning';
-        return;
+// Load statistics from localStorage
+function loadStatistics() {
+    const savedStats = localStorage.getItem('vocabularyStatistics');
+    if (savedStats) {
+        Object.assign(statistics, JSON.parse(savedStats));
     }
-    
-    // Filter words that need review
-    const now = new Date();
-    const wordsToReview = vocabulary.filter(word => {
-        if (!word.nextReview || !word.nextReview.Valid) return true;
-        return new Date(word.nextReview.Time) <= now;
+}
+
+// Update word progress tracking
+function updateWordProgress(wordId, status) {
+    if (!statistics.wordProgress[wordId]) {
+        statistics.wordProgress[wordId] = {
+            attempts: 0,
+            successes: 0,
+            lastStatus: null,
+            history: []
+        };
+    }
+
+    const wordStats = statistics.wordProgress[wordId];
+    wordStats.attempts++;
+    wordStats.lastStatus = status;
+    wordStats.history.push({
+        status,
+        timestamp: new Date().toISOString()
     });
 
-    if (wordsToReview.length === 0) {
-        wordElement.textContent = 'No words to review';
-        translationElement.textContent = 'All words are up to date!';
-        return;
+    if (status === 'remember') {
+        wordStats.successes++;
     }
 
-    // Select a random word from words that need review
-    const randomIndex = Math.floor(Math.random() * wordsToReview.length);
-    currentWordIndex = vocabulary.findIndex(w => w.id === wordsToReview[randomIndex].id);
-    
-    wordElement.textContent = vocabulary[currentWordIndex].word;
-    translationElement.textContent = vocabulary[currentWordIndex].translation;
-    translationElement.classList.add('hidden');
-    memoryControls.classList.add('hidden');
-}
-
-// Update progress bar and text
-function updateProgress() {
-    const progress = (wordsLearned / vocabulary.length) * 100;
-    progressFill.style.width = `${progress}%`;
-    progressText.textContent = `${wordsLearned}/${vocabulary.length} words`;
-}
-
-// Show translation
-function showTranslation() {
-    translationElement.classList.remove('hidden');
-    memoryControls.classList.remove('hidden');
-    triggerHapticFeedback('impact');
+    // Keep only last 10 attempts in history
+    if (wordStats.history.length > 10) {
+        wordStats.history.shift();
+    }
 }
 
 // Handle memory assessment
@@ -424,6 +460,10 @@ async function handleMemoryAssessment(status) {
 
     try {
         await updateWordStatus(currentWord.id, status);
+        
+        // Update statistics
+        updateStatistics(status);
+        updateWordProgress(currentWord.id, status);
         
         // Refresh vocabulary from server
         vocabulary = await fetchWords();
@@ -497,6 +537,127 @@ document.getElementById('cancelEditWord').addEventListener('click', () => {
     document.getElementById('editTranslation').value = '';
     triggerHapticFeedback('selection');
 });
+
+// Initialize the app
+async function initApp() {
+    // Load statistics
+    loadStatistics();
+    
+    vocabulary = await fetchWords();
+    statistics.totalWords = vocabulary.length;
+    
+    if (vocabulary.length > 0) {
+        updateWord();
+        updateProgress();
+    } else {
+        wordElement.textContent = 'No words available';
+        translationElement.textContent = 'Add some words to start learning';
+    }
+    renderWordList();
+}
+
+// Update the current word display
+function updateWord() {
+    if (vocabulary.length === 0) {
+        wordElement.textContent = 'No words available';
+        translationElement.textContent = 'Add some words to start learning';
+        return;
+    }
+    
+    // Filter words that need review
+    const now = new Date();
+    const wordsToReview = vocabulary.filter(word => {
+        if (!word.nextReview || !word.nextReview.Valid) return true;
+        return new Date(word.nextReview.Time) <= now;
+    });
+
+    if (wordsToReview.length === 0) {
+        wordElement.textContent = 'No words to review';
+        translationElement.textContent = 'All words are up to date!';
+        return;
+    }
+
+    // Select a random word from words that need review
+    const randomIndex = Math.floor(Math.random() * wordsToReview.length);
+    currentWordIndex = vocabulary.findIndex(w => w.id === wordsToReview[randomIndex].id);
+    
+    wordElement.textContent = vocabulary[currentWordIndex].word;
+    translationElement.textContent = vocabulary[currentWordIndex].translation;
+    translationElement.classList.add('hidden');
+    memoryControls.classList.add('hidden');
+}
+
+// Update progress bar and text
+function updateProgress() {
+    const progress = (wordsLearned / vocabulary.length) * 100;
+    progressFill.style.width = `${progress}%`;
+    progressText.textContent = `${wordsLearned}/${vocabulary.length} words`;
+}
+
+// Show translation
+function showTranslation() {
+    translationElement.classList.remove('hidden');
+    memoryControls.classList.remove('hidden');
+    triggerHapticFeedback('impact');
+}
+
+// Update statistics display
+function updateStatisticsDisplay() {
+    const today = new Date().toISOString().split('T')[0];
+    const todayStats = statistics.dailyProgress[today] || { learned: 0, forgotten: 0, repeated: 0 };
+
+    // Update today's progress
+    document.getElementById('todayLearned').textContent = todayStats.learned;
+    document.getElementById('todayForgotten').textContent = todayStats.forgotten;
+    document.getElementById('todayRepeated').textContent = todayStats.repeated;
+
+    // Update overall progress
+    document.getElementById('totalWords').textContent = statistics.totalWords;
+    document.getElementById('wordsLearned').textContent = statistics.wordsLearned;
+    document.getElementById('streakDays').textContent = statistics.streakDays;
+
+    // Update difficult words
+    updateDifficultWords();
+}
+
+// Update difficult words list
+function updateDifficultWords() {
+    const difficultWordsContainer = document.getElementById('difficultWords');
+    difficultWordsContainer.innerHTML = '';
+
+    // Get words with success rate less than 50%
+    const difficultWords = Object.entries(statistics.wordProgress)
+        .filter(([_, stats]) => {
+            const successRate = stats.successes / stats.attempts;
+            return successRate < 0.5 && stats.attempts >= 3;
+        })
+        .sort(([_, statsA], [__, statsB]) => {
+            const rateA = statsA.successes / statsA.attempts;
+            const rateB = statsB.successes / statsB.attempts;
+            return rateA - rateB;
+        })
+        .slice(0, 5); // Show top 5 most difficult words
+
+    difficultWords.forEach(([wordId, stats]) => {
+        const word = vocabulary.find(w => w.id === wordId);
+        if (!word) return;
+
+        const successRate = Math.round((stats.successes / stats.attempts) * 100);
+        
+        const wordElement = document.createElement('div');
+        wordElement.className = 'difficult-word-item';
+        wordElement.innerHTML = `
+            <div class="difficult-word-info">
+                <div class="difficult-word-word">${word.word}</div>
+                <div class="difficult-word-stats">
+                    ${stats.attempts} attempts, ${stats.successes} successes
+                </div>
+            </div>
+            <div class="difficult-word-success-rate">${successRate}%</div>
+        `;
+        difficultWordsContainer.appendChild(wordElement);
+    });
+}
 
 // Initialize the app when the page loads
 document.addEventListener('DOMContentLoaded', initApp);

@@ -317,3 +317,86 @@ body {
 .word-item-actions button.delete-button {
     background-color: var(--forget-color);
 }
+
+/* Statistics */
+.stats-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 16px;
+}
+
+.stats-card {
+    background-color: var(--tg-theme-bg-color);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stats-card h2 {
+    font-size: 18px;
+    margin: 0 0 16px 0;
+    color: var(--tg-theme-text-color);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+.stats-item {
+    text-align: center;
+}
+
+.stats-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--tg-theme-button-color);
+    margin-bottom: 4px;
+}
+
+.stats-label {
+    font-size: 14px;
+    color: var(--tg-theme-hint-color);
+}
+
+.history-chart {
+    height: 200px;
+    margin-top: 16px;
+}
+
+.difficult-words {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.difficult-word-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+}
+
+.difficult-word-info {
+    flex: 1;
+}
+
+.difficult-word-word {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.difficult-word-stats {
+    font-size: 14px;
+    color: var(--tg-theme-hint-color);
+}
+
+.difficult-word-success-rate {
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--tg-theme-button-color);
+}

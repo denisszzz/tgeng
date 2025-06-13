@@ -16,6 +16,7 @@
         <div class="tabs">
             <button class="tab-button active" data-tab="learn">Learn</button>
             <button class="tab-button" data-tab="manage">Manage Words</button>
+            <button class="tab-button" data-tab="stats">Statistics</button>
         </div>
 
         <div class="tab-content active" id="learn-tab">
@@ -88,6 +89,60 @@
                 <div class="form-buttons">
                     <button class="tg-button" id="updateWord">Update</button>
                     <button class="tg-button cancel-button" id="cancelEditWord">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="stats-tab">
+            <div class="stats-container">
+                <div class="stats-card">
+                    <h2>Today's Progress</h2>
+                    <div class="stats-grid">
+                        <div class="stats-item">
+                            <div class="stats-value" id="todayLearned">0</div>
+                            <div class="stats-label">Learned</div>
+                        </div>
+                        <div class="stats-item">
+                            <div class="stats-value" id="todayForgotten">0</div>
+                            <div class="stats-label">Forgotten</div>
+                        </div>
+                        <div class="stats-item">
+                            <div class="stats-value" id="todayRepeated">0</div>
+                            <div class="stats-label">Repeated</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-card">
+                    <h2>Overall Progress</h2>
+                    <div class="stats-grid">
+                        <div class="stats-item">
+                            <div class="stats-value" id="totalWords">0</div>
+                            <div class="stats-label">Total Words</div>
+                        </div>
+                        <div class="stats-item">
+                            <div class="stats-value" id="wordsLearned">0</div>
+                            <div class="stats-label">Learned</div>
+                        </div>
+                        <div class="stats-item">
+                            <div class="stats-value" id="streakDays">0</div>
+                            <div class="stats-label">Day Streak</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-card">
+                    <h2>Learning History</h2>
+                    <div class="history-chart" id="historyChart">
+                        <!-- Chart will be rendered here -->
+                    </div>
+                </div>
+
+                <div class="stats-card">
+                    <h2>Difficult Words</h2>
+                    <div class="difficult-words" id="difficultWords">
+                        <!-- Difficult words will be listed here -->
+                    </div>
                 </div>
             </div>
         </div>
