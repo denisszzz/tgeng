@@ -443,11 +443,13 @@ async function handleMemoryAssessment(status) {
     if (!currentWord) return;
 
     try {
-        await updateWordStatus(currentWord.id, status);
+        // Convert status to uppercase with underscores
+        const formattedStatus = status.toUpperCase();
+        await updateWordStatus(currentWord.id, formattedStatus);
         
         // Update statistics
-        updateStatistics(status);
-        updateWordProgress(currentWord.id, status);
+        updateStatistics(formattedStatus);
+        updateWordProgress(currentWord.id, formattedStatus);
         
         // Refresh vocabulary from server
         vocabulary = await fetchWords();
@@ -493,9 +495,9 @@ async function handleAddWord() {
 
 // Event listeners
 showTranslationButton.addEventListener('click', showTranslation);
-rememberButton.addEventListener('click', () => handleMemoryAssessment('remember'));
-forgetButton.addEventListener('click', () => handleMemoryAssessment('forget'));
-repeatTomorrowButton.addEventListener('click', () => handleMemoryAssessment('repeat_tomorrow'));
+rememberButton.addEventListener('click', () => handleMemoryAssessment('REMEMBER'));
+forgetButton.addEventListener('click', () => handleMemoryAssessment('FORGET'));
+repeatTomorrowButton.addEventListener('click', () => handleMemoryAssessment('REPEAT_TOMORROW'));
 saveWordButton.addEventListener('click', handleAddWord);
 cancelAddWordButton.addEventListener('click', () => {
     addWordForm.classList.add('hidden');
