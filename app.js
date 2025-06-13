@@ -388,9 +388,25 @@ async function updateStatistics(status) {
         const now = new Date();
         const date = now.toISOString();
 
+        // Convert status to the format expected by statistics endpoint
+        let statisticsStatus;
+        switch (status) {
+            case 'remember':
+                statisticsStatus = 'LEARNED';
+                break;
+            case 'forget':
+                statisticsStatus = 'FORGOTTEN';
+                break;
+            case 'repeat_tomorrow':
+                statisticsStatus = 'REPEATED';
+                break;
+            default:
+                throw new Error('Invalid status for statistics: ' + status);
+        }
+
         const requestData = {
             user_id,
-            status,
+            status: statisticsStatus,
             date
         };
 
