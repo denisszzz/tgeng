@@ -374,13 +374,17 @@ async function updateStatistics(status) {
             throw new Error('User ID is required');
         }
 
+        // Create date in RFC3339 format
+        const now = new Date();
+        const date = now.toISOString(); // This will give format like "2024-03-14T12:00:00.000Z"
+
         const response = await fetch(API.updateStatistics, {
             method: 'POST',
             headers,
             body: JSON.stringify({
                 user_id,
                 status,
-                date: new Date().toISOString().split('T')[0]
+                date
             })
         });
 
