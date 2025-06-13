@@ -275,7 +275,7 @@ function switchTab(tabName) {
     triggerHapticFeedback('selection');
 }
 
-// Word list rendering
+// Word list renderingё
 function renderWordList() {
     wordsList.innerHTML = '';
     
@@ -379,8 +379,8 @@ function updateWord() {
     // Filter words that need review
     const now = new Date();
     const wordsToReview = vocabulary.filter(word => {
-        if (!word.nextReview) return true;
-        return new Date(word.nextReview) <= now;
+        if (!word.nextReview || !word.nextReview.Valid) return true;
+        return new Date(word.nextReview.Time) <= now;
     });
 
     if (wordsToReview.length === 0) {
